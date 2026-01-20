@@ -1,0 +1,11 @@
+/_data/*
+/_output/*
+.env*
+!.env.example*
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.log
+.doit.db.db
+docs/
+.DS_Store

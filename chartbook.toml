@@ -1,0 +1,110 @@
+[config]
+type = "pipeline"
+chartbook_format_version = "0.0.2"
+
+[site]
+title = "WRDS CRSP-Compustat"
+author = "Jeremy Bejarano"
+copyright = "2025"
+logo_path = ""
+favicon_path = ""
+
+[pipeline]
+id = "wrds_crsp_compustat"
+pipeline_name = "WRDS CRSP-Compustat"
+pipeline_description = "CRSP stock returns and Fama-French factor replication from WRDS CRSP and Compustat databases"
+lead_pipeline_developer = "Jeremy Bejarano"
+contributors = ["Jeremy Bejarano", "Tobias Rodriguez del Pozo"]
+runs_on = "Windows/Linux/MacOS"
+git_repo_URL = "https://github.com/ftsfr/wrds_crsp_compustat"
+README_file_path = "./README.md"
+
+[notebooks]
+
+[notebooks.summary_crsp_compustat]
+notebook_name = "summary_crsp_compustat"
+notebook_description = "Summary statistics and visualization of CRSP stock returns and Fama-French factors"
+notebook_path = "_output/_notebook_build/summary_crsp_compustat.ipynb"
+is_publishable = true
+
+[charts]
+
+[dataframes]
+
+[dataframes.ftsfr_CRSP_monthly_stock_ret]
+dataframe_name = "ftsfr_CRSP_monthly_stock_ret"
+short_description_df = "CRSP monthly stock returns (including dividends) in long format"
+data_sources = ["CRSP"]
+data_providers = ["WRDS"]
+need_to_contact_provider = ["no"]
+data_on_pre_approved_list = ["No"]
+links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
+topic_tags = ["stocks", "returns", "CRSP"]
+type_of_data_access = ["WRDS Subscription"]
+data_license = "WRDS"
+license_expiration_date = ""
+provider_contact_info = ""
+restriction_on_use = "No"
+how_is_pulled = "Pulled from WRDS CRSP database"
+path_to_parquet_data = "./_data/ftsfr_CRSP_monthly_stock_ret.parquet"
+path_to_excel_data = ""
+date_col = "ds"
+dataframe_docs_str = """
+## CRSP Monthly Stock Returns
+
+Monthly stock returns from CRSP (including dividends).
+
+### Columns
+
+| Column | Description |
+|--------|-------------|
+| unique_id | CRSP PERMNO (permanent security identifier) |
+| ds | Month-end date |
+| y | Monthly return (including dividends) |
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS (CIZ format)
+
+### Universe
+
+- Common stocks (securitysubtype='COM')
+- U.S. incorporated companies (usincflg='Y')
+- NYSE, AMEX, NASDAQ exchanges
+"""
+
+[dataframes.ftsfr_CRSP_monthly_stock_retx]
+dataframe_name = "ftsfr_CRSP_monthly_stock_retx"
+short_description_df = "CRSP monthly stock returns (excluding dividends) in long format"
+data_sources = ["CRSP"]
+data_providers = ["WRDS"]
+need_to_contact_provider = ["no"]
+data_on_pre_approved_list = ["No"]
+links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
+topic_tags = ["stocks", "returns", "CRSP"]
+type_of_data_access = ["WRDS Subscription"]
+data_license = "WRDS"
+license_expiration_date = ""
+provider_contact_info = ""
+restriction_on_use = "No"
+how_is_pulled = "Pulled from WRDS CRSP database"
+path_to_parquet_data = "./_data/ftsfr_CRSP_monthly_stock_retx.parquet"
+path_to_excel_data = ""
+date_col = "ds"
+dataframe_docs_str = """
+## CRSP Monthly Stock Returns (Ex-Dividend)
+
+Monthly stock returns from CRSP excluding dividends.
+
+### Columns
+
+| Column | Description |
+|--------|-------------|
+| unique_id | CRSP PERMNO (permanent security identifier) |
+| ds | Month-end date |
+| y | Monthly return (excluding dividends) |
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS (CIZ format)
+"""
