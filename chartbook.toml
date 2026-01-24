@@ -24,10 +24,32 @@ README_file_path = "./README.md"
 [notebooks.summary_crsp_compustat]
 notebook_name = "summary_crsp_compustat"
 notebook_description = "Summary statistics and visualization of CRSP stock returns and Fama-French factors"
-notebook_path = "_output/_notebook_build/summary_crsp_compustat.ipynb"
+notebook_path = "_output/summary_crsp_compustat.ipynb"
 is_publishable = true
 
 [charts]
+
+[charts.crsp_returns_replication]
+chart_name = "CRSP Monthly Stock Returns"
+short_description_chart = "CRSP monthly stock returns for Fama-French 1993 factor replication"
+dataframe_id = "ftsfr_CRSP_monthly_stock_ret"
+path_to_html_chart = "./_output/crsp_returns_replication.html"
+path_to_excel_chart = ""
+topic_tags = ["stocks", "returns", "CRSP", "fama-french", "replication"]
+past_publications = ["Fama and French (1993) - Common risk factors in the returns on stocks and bonds"]
+chart_docs_str = """
+## CRSP Monthly Stock Returns
+
+Monthly stock returns from CRSP for Fama-French factor construction.
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS
+
+### Reference
+
+Fama and French (1993) factor methodology
+"""
 
 [dataframes]
 

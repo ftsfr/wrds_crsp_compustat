@@ -15,4 +15,6 @@ myst-nb
 sphinx==7.3.7
 sphinx-book-theme==1.1.3
 python-dotenv==1.0.1
+python-decouple
+requests
 wrds==3.2.0

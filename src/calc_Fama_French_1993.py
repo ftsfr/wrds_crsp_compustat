@@ -74,7 +74,7 @@ def calc_book_equity_and_years_in_compustat(comp):
 
     # Update the 'be' (book equity) column to ensure that only positive values
     # are retained. If 'be' is less than or equal to 0, it is replaced with NaN
-    comp["be"] = np.where(comp["be"] > 0, comp["be"], np.nan)
+    comp.loc[comp["be"] <= 0, "be"] = np.nan
 
     # number of years in Compustat
     comp = comp.sort_values(by=["gvkey", "datadate"])
@@ -259,7 +259,7 @@ def use_dec_market_equity(crsp2):
 
 def size_bucket(row):
     """Assign stock to portfolio by size"""
-    if row["me"] == np.nan:
+    if pd.isna(row["me"]) or pd.isna(row["sizemedn"]):
         value = ""
     elif row["me"] <= row["sizemedn"]:
         value = "S"
@@ -270,7 +270,9 @@ def size_bucket(row):
 
 def book_to_market_bucket(row):
     """Assign stock to portfolio by book-to-market ratio"""
-    if 0 <= row["beme"] <= row["bm30"]:
+    if pd.isna(row["beme"]) or pd.isna(row["bm30"]) or pd.isna(row["bm70"]):
+        value = ""
+    elif 0 <= row["beme"] <= row["bm30"]:
         value = "L"
     elif row["beme"] <= row["bm70"]:
         value = "ME"
@@ -337,23 +339,22 @@ def assign_size_and_bm_portfolios(ccm_jun, crsp3):
     ccm1_jun = pd.merge(ccm_jun, nyse_breaks, how="left", on=["jdate"])
 
     # assign size portfolio
+    valid_mask = ((ccm1_jun["beme"] > 0) & (ccm1_jun["me"] > 0) & (ccm1_jun["count"] >= 1)).fillna(False)
     ccm1_jun["szport"] = np.where(
-        (ccm1_jun["beme"] > 0) & (ccm1_jun["me"] > 0) & (ccm1_jun["count"] >= 1),
+        valid_mask,
         ccm1_jun.apply(size_bucket, axis=1),
         "",
     )
 
     # assign book-to-market portfolio
     ccm1_jun["bmport"] = np.where(
-        (ccm1_jun["beme"] > 0) & (ccm1_jun["me"] > 0) & (ccm1_jun["count"] >= 1),
+        valid_mask,
         ccm1_jun.apply(book_to_market_bucket, axis=1),
         "",
     )
 
     # create positivebmeme and nonmissport variable
-    ccm1_jun["posbm"] = np.where(
-        (ccm1_jun["beme"] > 0) & (ccm1_jun["me"] > 0) & (ccm1_jun["count"] >= 1), 1, 0
-    )
+    ccm1_jun["posbm"] = np.where(valid_mask, 1, 0)
     ccm1_jun["nonmissport"] = np.where((ccm1_jun["bmport"] != ""), 1, 0)
 
     # store portfolio assignment as of June

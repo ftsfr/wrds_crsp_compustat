@@ -1,0 +1,25 @@
+# Paper References for WRDS CRSP Compustat Module
+
+[Fama1993]
+title = "Common risk factors in the returns on stocks and bonds"
+authors = "Eugene F. Fama and Kenneth R. French"
+year = 1993
+journal = "Journal of Financial Economics"
+volume = "33"
+pages = "3-56"
+description = "The paper identifies three stock-market factors: an overall market factor, firm size (SMB), and book-to-market equity (HML)."
+empirical_facts = [
+    "The study identifies three stock-market factors: an overall market factor, firm size, and book-to-market equity.",
+    "Small stocks (low market equity) tend to have higher average returns than large stocks.",
+    "High book-to-market stocks tend to have higher average returns than low book-to-market stocks.",
+    "The three-factor model explains most of the cross-sectional variation in average stock returns.",
+]
+lessons_learned = [
+    "Traditional CAPM may not fully capture the cross-section of average returns on stocks.",
+    "Empirically determined variables like size and book-to-market equity have significant explanatory power.",
+]
+data_sources = ["CRSP Monthly Stock File", "Compustat Annual Data"]
+methodology = """
+SMB (Small Minus Big) = Average return on small stock portfolios - Average return on big stock portfolios
+HML (High Minus Low) = Average return on high B/M portfolios - Average return on low B/M portfolios
+"""

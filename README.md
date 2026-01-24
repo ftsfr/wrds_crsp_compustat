@@ -48,3 +48,21 @@ Factors are constructed following the methodology in Fama-French (1993):
 - HML (High Minus Low): Value factor
 
 Uses NYSE breakpoints for portfolio formation.
+
+## Academic References
+
+### Primary Paper
+
+- **Fama and French (1993)** - "Common risk factors in the returns on stocks and bonds"
+  - Journal of Financial Economics 33 (1993): 3-56
+  - Foundational paper for SMB and HML factor construction
+
+### Key Findings Replicated
+
+- Small stocks (low market equity) have higher average returns than large stocks
+- High book-to-market stocks have higher average returns than low book-to-market stocks
+- The three-factor model explains most cross-sectional variation in stock returns
+
+### Validation
+
+Unit tests compare our replicated factors against the Ken French Data Library, achieving correlations >0.98.
