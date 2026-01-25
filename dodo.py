@@ -164,6 +164,23 @@ def task_run_notebooks():
         }
 
 
+def task_generate_charts():
+    """Generate interactive HTML charts."""
+    return {
+        "actions": ["python src/generate_chart.py"],
+        "file_dep": [
+            "src/generate_chart.py",
+            DATA_DIR / "ftsfr_CRSP_monthly_stock_ret.parquet",
+        ],
+        "targets": [
+            OUTPUT_DIR / "crsp_returns_replication.html",
+            OUTPUT_DIR / "crsp_cumulative_returns.html",
+        ],
+        "verbosity": 2,
+        "task_dep": ["create_ftsfr_datasets"],
+    }
+
+
 def task_generate_pipeline_site():
     """Generate the chartbook documentation site."""
     return {
@@ -171,7 +188,10 @@ def task_generate_pipeline_site():
         "file_dep": [
             "chartbook.toml",
             OUTPUT_DIR / "summary_crsp_compustat.ipynb",
+            OUTPUT_DIR / "crsp_returns_replication.html",
+            OUTPUT_DIR / "crsp_cumulative_returns.html",
         ],
         "targets": [BASE_DIR / "docs" / "index.html"],
         "verbosity": 2,
+        "task_dep": ["run_notebooks", "generate_charts"],
     }

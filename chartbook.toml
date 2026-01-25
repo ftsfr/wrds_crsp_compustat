@@ -51,6 +51,28 @@ CRSP Monthly Stock File via WRDS
 Fama and French (1993) factor methodology
 """
 
+[charts.crsp_cumulative_returns]
+chart_name = "CRSP Monthly Stock Cumulative Returns"
+short_description_chart = "Cumulative returns showing growth of $1 invested in CRSP stocks"
+dataframe_id = "ftsfr_CRSP_monthly_stock_ret"
+path_to_html_chart = "./_output/crsp_cumulative_returns.html"
+path_to_excel_chart = ""
+topic_tags = ["stocks", "cumulative returns", "CRSP", "fama-french"]
+past_publications = ["Fama and French (1993) - Common risk factors in the returns on stocks and bonds"]
+chart_docs_str = """
+## CRSP Monthly Stock Cumulative Returns
+
+Cumulative returns showing growth of $1 invested in CRSP stocks for Fama-French factor construction.
+
+### Calculation
+
+Cumulative return = Product of (1 + monthly return) over time
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS
+"""
+
 [dataframes]
 
 [dataframes.ftsfr_CRSP_monthly_stock_ret]
