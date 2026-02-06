@@ -4,8 +4,9 @@ dodo.py - Doit build automation for WRDS CRSP/Compustat pipeline
 Run with: doit
 """
 
+import os
 import platform
-import subprocess
+import shutil
 import sys
 from pathlib import Path
 
@@ -19,48 +20,59 @@ OUTPUT_DIR = BASE_DIR / "_output"
 OS_TYPE = "nix" if platform.system() != "Windows" else "windows"
 
 
-def jupyter_execute_notebook(notebook):
-    """Execute a notebook and save the output in-place."""
-    subprocess.run(
-        [
-            "jupyter",
-            "nbconvert",
-            "--to",
-            "notebook",
-            "--execute",
-            "--inplace",
-            notebook,
-        ],
-        check=True,
-    )
+## Helpers for handling Jupyter Notebook tasks
+os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
 
-def jupyter_to_html(notebook, output_dir=OUTPUT_DIR):
-    """Convert a notebook to HTML."""
-    subprocess.run(
-        [
-            "jupyter",
-            "nbconvert",
-            "--to",
-            "html",
-            "--output-dir",
-            str(output_dir),
-            notebook,
-        ],
-        check=True,
-    )
+# fmt: off
+## Helper functions for automatic execution of Jupyter notebooks
+def jupyter_execute_notebook(notebook_path):
+    return f"jupyter nbconvert --execute --to notebook --ClearMetadataPreprocessor.enabled=True --inplace {notebook_path}"
+def jupyter_to_html(notebook_path, output_dir=OUTPUT_DIR):
+    return f"jupyter nbconvert --to html --output-dir={output_dir} {notebook_path}"
+def jupyter_to_md(notebook_path, output_dir=OUTPUT_DIR):
+    """Requires jupytext"""
+    return f"jupytext --to markdown --output-dir={output_dir} {notebook_path}"
+def jupyter_to_python(notebook_path, notebook, build_dir):
+    """Convert a notebook to a python script"""
+    return f"jupyter nbconvert --to python {notebook_path} --output _{notebook}.py --output-dir {build_dir}"
+def jupyter_clear_output(notebook_path):
+    """Clear the output of a notebook"""
+    return f"jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True --inplace {notebook_path}"
+def jupytext_to_notebook(pyfile_path, notebook_path):
+    """Convert a Python script to a Jupyter notebook using jupytext."""
+    return f"jupytext --to notebook --output {notebook_path} {pyfile_path}"
+# fmt: on
+
+
+def mkdir_p(path):
+    """Create directory and parents if they don't exist (platform-agnostic)."""
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+
+def mv_file(from_path, to_path):
+    """Move a file to a destination path using Python (platform-agnostic)."""
+    from_path = Path(from_path)
+    to_path = Path(to_path)
+    to_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(from_path), str(to_path))
+
+
+##################################
+## Begin rest of PyDoit tasks here
+##################################
 
 
 def task_config():
-    """Create necessary directories."""
+    """Create empty directories for data and output if they don't exist"""
     return {
         "actions": [
-            f"mkdir -p {DATA_DIR}" if OS_TYPE == "nix" else f"mkdir {DATA_DIR}",
-            f"mkdir -p {OUTPUT_DIR}" if OS_TYPE == "nix" else f"mkdir {OUTPUT_DIR}",
+            (mkdir_p, [DATA_DIR]),
+            (mkdir_p, [OUTPUT_DIR]),
         ],
         "targets": [DATA_DIR, OUTPUT_DIR],
-        "uptodate": [True],
-        "verbosity": 2,
+        "file_dep": [".env"],
+        "clean": [],
     }
 
 
@@ -132,36 +144,53 @@ def task_create_ftsfr_datasets():
     }
 
 
+notebook_tasks = {
+    "summary_crsp_compustat_ipynb": {
+        "path": "./src/summary_crsp_compustat_ipynb.py",
+        "file_dep": [
+            DATA_DIR / "ftsfr_CRSP_monthly_stock_ret.parquet",
+        ],
+        "targets": [],
+    },
+}
+notebook_files = []
+for notebook in notebook_tasks.keys():
+    pyfile_path = Path(notebook_tasks[notebook]["path"])
+    notebook_files.append(pyfile_path)
+
+
+# fmt: off
 def task_run_notebooks():
-    """Execute and convert summary notebooks."""
-    notebooks = ["src/summary_crsp_compustat_ipynb.py"]
-    notebook_build_dir = OUTPUT_DIR
+    """Convert, execute, and export notebooks to HTML.
 
-    for notebook_py in notebooks:
-        notebook_ipynb = notebook_py.replace("_ipynb.py", ".ipynb")
-        notebook_name = Path(notebook_ipynb).stem
-        notebook_build_path = notebook_build_dir / f"{notebook_name}.ipynb"
-
+    Uses jupytext to convert .py files to .ipynb, then executes and exports to HTML.
+    """
+    for notebook in notebook_tasks.keys():
+        pyfile_path = Path(notebook_tasks[notebook]["path"])
+        # Create notebook in src/ directory (same as .py file) so imports work
+        notebook_path = pyfile_path.with_suffix(".ipynb")
+        output_notebook_path = OUTPUT_DIR / "_notebook_build" / f"{notebook}.ipynb"
         yield {
-            "name": notebook_name,
+            "name": notebook,
             "actions": [
-                f"mkdir -p {notebook_build_dir}" if OS_TYPE == "nix" else f"mkdir {notebook_build_dir}",
-                f"ipynb-py-convert {notebook_py} {notebook_ipynb}",
-                lambda nb=notebook_ipynb: jupyter_execute_notebook(nb),
-                lambda nb=notebook_ipynb: jupyter_to_html(nb),
-                f"cp {notebook_ipynb} {notebook_build_path}",
+                jupytext_to_notebook(pyfile_path, notebook_path),
+                jupyter_execute_notebook(notebook_path),
+                (mkdir_p, [OUTPUT_DIR / "_notebook_build"]),
+                (mv_file, [notebook_path, output_notebook_path]),
+                jupyter_to_html(output_notebook_path),
             ],
             "file_dep": [
-                notebook_py,
-                DATA_DIR / "ftsfr_CRSP_monthly_stock_ret.parquet",
+                pyfile_path,
+                *notebook_tasks[notebook]["file_dep"],
             ],
             "targets": [
-                notebook_ipynb,
-                OUTPUT_DIR / f"{notebook_name}.html",
-                notebook_build_path,
+                OUTPUT_DIR / f"{notebook}.html",
+                *notebook_tasks[notebook]["targets"],
             ],
+            "clean": True,
             "verbosity": 2,
         }
+# fmt: on
 
 
 def task_generate_charts():
@@ -187,7 +216,7 @@ def task_generate_pipeline_site():
         "actions": ["chartbook build -f"],
         "file_dep": [
             "chartbook.toml",
-            OUTPUT_DIR / "summary_crsp_compustat.ipynb",
+            *notebook_files,
             OUTPUT_DIR / "crsp_returns_replication.html",
             OUTPUT_DIR / "crsp_cumulative_returns.html",
         ],

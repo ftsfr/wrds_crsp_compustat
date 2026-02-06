@@ -24,7 +24,7 @@ README_file_path = "./README.md"
 [notebooks.summary_crsp_compustat]
 notebook_name = "summary_crsp_compustat"
 notebook_description = "Summary statistics and visualization of CRSP stock returns and Fama-French factors"
-notebook_path = "_output/summary_crsp_compustat.ipynb"
+notebook_path = "_output/_notebook_build/summary_crsp_compustat_ipynb.ipynb"
 is_publishable = true
 
 [charts]
