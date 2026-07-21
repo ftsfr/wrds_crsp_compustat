@@ -1,16 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.18.1
 #   kernelspec:
-#     display_name: finm-32900-venv-p31211 (3.12.11.final.0)
+#     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
@@ -19,15 +16,13 @@
 # # Fama-French (1993) Factor Replication
 
 # %%
-import sys
-sys.path.insert(0, "./src")
-
-import chartbook
 import datetime
+
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 
+import chartbook
+import calc_Fama_French_1993 as ff
 from calc_Fama_French_1993 import compare_with_actual_ff_factors
 
 BASE_DIR = chartbook.env.get_project_root()
@@ -61,7 +56,7 @@ print(f"Shape: {df_ret.shape}")
 print(f"Columns: {df_ret.columns.tolist()}")
 print(f"\nDate range: {df_ret['ds'].min()} to {df_ret['ds'].max()}")
 print(f"Number of unique stocks: {df_ret['unique_id'].nunique()}")
-display(df_ret)
+df_ret
 
 # %%
 df_ret.describe()
@@ -73,7 +68,7 @@ df_ret.describe()
 df_fund = pd.read_parquet(DATA_DIR / "Compustat.parquet")
 print(f"Shape: {df_fund.shape}")
 print(f"Columns: {df_fund.columns.tolist()}")
-display(df_fund)
+df_fund
 
 # %%
 df_fund.describe()
@@ -85,7 +80,7 @@ df_fund.describe()
 df_link = pd.read_parquet(DATA_DIR / "CRSP_Comp_Link_Table.parquet")
 print(f"Shape: {df_link.shape}")
 print(f"Columns: {df_link.columns.tolist()}")
-display(df_link)
+df_link
 
 # %%
 df_link.describe()
@@ -182,7 +177,7 @@ ff_compare, ff_compare_post_1970 = compare_with_actual_ff_factors(
 )
 
 print("Comparison with actual Fama-French factors:")
-display(ff_compare)
+ff_compare
 
 # %% [markdown]
 # ### Plot Comparisons
@@ -220,7 +215,7 @@ print(f"Correlation between actual and manual HML: {corr_hml:.4f}")
 
 # %%
 # Calc rolling correlations
-rolling_window = 12  # 5 years of monthly data
+rolling_window = 12  # 1 year of monthly data
 rolling_corr_smb = ff_compare["smb_actual"].rolling(window=rolling_window).corr(ff_compare["smb_manual"])
 rolling_corr_hml = ff_compare["hml_actual"].rolling(window=rolling_window).corr(ff_compare["hml_manual"])
 
@@ -246,11 +241,18 @@ plt.show()
 
 # %% [markdown]
 # ## Table 1
-
-# %% [markdown]
-# For reference, table_1.png:
 #
-# ![Table 1](../assets/table_1.png)
+# This repo replicates Table 1 of the primary paper:
+#
+# > Fama, Eugene F., and Kenneth R. French, 1993, "Common risk factors in the
+# > returns on stocks and bonds," *Journal of Financial Economics* 33, 3-56.
+#
+# Table 1 reports descriptive statistics for 25 portfolios formed on size and
+# book-to-market equity, 1963-1991. Panels 1-4 (firm size, BE/ME, percent of
+# market value, and number of firms) are replicated below; Panels 5 and 6
+# (E/P and D/P ratios) are shown for reference but not yet replicated.
+#
+# ![Fama-French (1993), Table 1](../assets/table_1.png)
 
 # %% [markdown]
 # ### Published Fama-French (1993) Table 1 values
@@ -322,94 +324,33 @@ plt.show()
 # %% [markdown]
 # ### Build the 5x5 sorted firm-June panel
 #
-# Descriptive statistics for the 25 size x book-to-market portfolios, following Fama-French (1993) Table 1. Stocks are sorted independently each June into NYSE size quintiles and NYSE BE/ME quintiles, forming a 5x5 grid (size rows 1=Small..5=Big, BE/ME columns 1=Low..5=High).
-#
-# Rebuilt from the raw CRSP/Compustat data via the pipeline functions; the resulting `ff5` frame (one row per firm per June, tagged with `sz5`/`bm5`) is reused by every panel below.
+# Stocks are sorted independently each June into NYSE size quintiles and NYSE
+# BE/ME quintiles, forming a 5x5 grid (size rows 1=Small..5=Big, BE/ME columns
+# 1=Low..5=High). The firm-June panel (one row per permno per June, tagged with
+# `sz5`/`bm5`) is rebuilt from the raw CRSP/Compustat data via
+# `calc_Fama_French_1993.build_25_size_beme_portfolios` and is reused by every
+# panel below. To match the published table, the panels average annual
+# within-portfolio statistics over formation years 1963-1991 only.
 
 # %%
-import numpy as np
-
-import pull_CRSP_Compustat as pcc
-import calc_Fama_French_1993 as ff
-
-# Rebuild the per-firm June panel (one row per permno per June)
-_comp = ff.calc_book_equity_and_years_in_compustat(pcc.load_compustat(data_dir=DATA_DIR))
-_crsp = ff.subset_CRSP_to_common_stock_and_exchanges(pcc.load_CRSP_stock_ciz(data_dir=DATA_DIR))
-_ccm = pcc.load_CRSP_Comp_Link_Table(data_dir=DATA_DIR)
-_crsp2 = ff.calculate_market_equity(_crsp)
-_crsp3, _crsp_jun = ff.use_dec_market_equity(_crsp2)
-ccm_jun = ff.merge_CRSP_and_Compustat(_crsp_jun, _comp, _ccm)
-
-# Universe filter: positive BE/ME, positive June ME, positive Dec ME, >= 1 year in
-# Compustat. The dec_me > 0 condition drops a handful of firms whose December market
-# equity is zero, which would otherwise make beme = be*1000/dec_me infinite.
-ff5 = ccm_jun[
-    (ccm_jun["beme"] > 0)
-    & (ccm_jun["me"] > 0)
-    & (ccm_jun["dec_me"] > 0)
-    & (ccm_jun["count"] >= 1)
-].copy()
-
-# NYSE quintile breakpoints per June, computed separately for size and BE/ME
-_nyse = ff5[ff5["primaryexch"] == "N"]
-
-
-def _nyse_quintiles(col):
-    brk = (
-        _nyse.groupby("jdate")[col]
-        .quantile([0.2, 0.4, 0.6, 0.8])
-        .unstack()
-        .rename(columns={0.2: f"{col}_20", 0.4: f"{col}_40", 0.6: f"{col}_60", 0.8: f"{col}_80"})
-        .reset_index()
-    )
-    return brk
-
-
-ff5 = ff5.merge(_nyse_quintiles("me"), on="jdate").merge(_nyse_quintiles("beme"), on="jdate")
-
-
-def _quintile(v, b20, b40, b60, b80):
-    if v <= b20:
-        return 1
-    if v <= b40:
-        return 2
-    if v <= b60:
-        return 3
-    if v <= b80:
-        return 4
-    return 5
-
-
-ff5["sz5"] = ff5.apply(lambda r: _quintile(r["me"], r["me_20"], r["me_40"], r["me_60"], r["me_80"]), axis=1)
-ff5["bm5"] = ff5.apply(lambda r: _quintile(r["beme"], r["beme_20"], r["beme_40"], r["beme_60"], r["beme_80"]), axis=1)
-
-# Express June market equity in $millions (me = price x shrout-in-thousands -> $thousands)
-ff5["me_mm"] = ff5["me"] / 1000.0
+ff5 = ff.build_25_size_beme_portfolios(data_dir=DATA_DIR)
+panels = ff.calc_table1_panels(ff5, start_year=1963, end_year=1991)
 
 print(f"Firm-June observations in 5x5 universe: {len(ff5):,}")
 print(f"June dates: {ff5['jdate'].min():%Y-%m} to {ff5['jdate'].max():%Y-%m}")
+print("Panels below use formation years 1963-1991 to match the published table.")
 
 # %% [markdown]
 # ### Panel 1: Average of annual averages of firm size ($millions)
 #
 # For each June, average firm size (June ME) is computed within each of the 25
-# portfolios; those annual averages are then averaged across all years.
+# portfolios; those annual averages are then averaged across 1963-1991.
 
 # %%
-# Calc "Average of annual averages of firm size"
-_annual_size = ff5.groupby(["jdate", "sz5", "bm5"])["me_mm"].mean().reset_index()
-panel_size = (
-    _annual_size.groupby(["sz5", "bm5"])["me_mm"]
-    .mean()
-    .unstack()
-    .rename_axis(index="Size", columns="BE/ME")
-)
-panel_size.index = ["Small", "2", "3", "4", "Big"]
-panel_size.columns = ["Low", "2", "3", "4", "High"]
-display(panel_size.round(1))
+panels["size"].round(1)
 
 # %% [markdown]
-# **Panel 1: Average of annual averages of firm size ($ millions)**
+# **Published Panel 1 values (1963-1991):**
 #
 # | Size | Low | 2 | 3 | 4 | High |
 # |------|----:|----:|----:|----:|----:|
@@ -422,24 +363,15 @@ display(panel_size.round(1))
 # %% [markdown]
 # ### Panel 2: Average of annual BE/ME ratios for portfolio
 #
-# For each June, the average book-to-market ratio (`beme`) is computed within each
-# of the 25 portfolios; those annual averages are then averaged across all years.
+# For each June, the average book-to-market ratio (`beme`) is computed within
+# each of the 25 portfolios; those annual averages are then averaged across
+# 1963-1991.
 
 # %%
-# Calc "Average of annual BE/ME ratios for portfolio"
-_annual_beme = ff5.groupby(["jdate", "sz5", "bm5"])["beme"].mean().reset_index()
-panel_beme = (
-    _annual_beme.groupby(["sz5", "bm5"])["beme"]
-    .mean()
-    .unstack()
-    .rename_axis(index="Size", columns="BE/ME")
-)
-panel_beme.index = ["Small", "2", "3", "4", "Big"]
-panel_beme.columns = ["Low", "2", "3", "4", "High"]
-display(panel_beme.round(2))
+panels["beme"].round(2)
 
 # %% [markdown]
-# **Panel 2: Average of annual BE/ME ratios for portfolio**
+# **Published Panel 2 values (1963-1991):**
 #
 # | Size | Low | 2 | 3 | 4 | High |
 # |------|----:|----:|----:|----:|----:|
@@ -452,29 +384,16 @@ display(panel_beme.round(2))
 # %% [markdown]
 # ### Panel 3: Average of annual percent of market value in portfolio
 #
-# For each June, each portfolio's share of total market value is computed as the sum
-# of June ME in the cell divided by the total June ME across all 25 cells; those
-# annual percentages are then averaged across all years. The full 25-cell grid sums
-# to ~100% (small deviations come from cells that are empty in early years).
+# For each June, each portfolio's share of total market value is computed as the
+# sum of June ME in the cell divided by the total June ME across all 25 cells;
+# those annual percentages are then averaged across 1963-1991. The full 25-cell
+# grid sums to ~100% each year.
 
 # %%
-# Calc "Average of annual percent of market value in portfolio"
-_cell_value = ff5.groupby(["jdate", "sz5", "bm5"])["me_mm"].sum().reset_index()
-_total_value = ff5.groupby("jdate")["me_mm"].sum().rename("total_me").reset_index()
-_cell_value = _cell_value.merge(_total_value, on="jdate")
-_cell_value["pct"] = 100 * _cell_value["me_mm"] / _cell_value["total_me"]
-panel_pct = (
-    _cell_value.groupby(["sz5", "bm5"])["pct"]
-    .mean()
-    .unstack()
-    .rename_axis(index="Size", columns="BE/ME")
-)
-panel_pct.index = ["Small", "2", "3", "4", "Big"]
-panel_pct.columns = ["Low", "2", "3", "4", "High"]
-display(panel_pct.round(2))
+panels["pct_mktval"].round(2)
 
 # %% [markdown]
-# **Panel 3: Average of annual percent of market value in portfolio**
+# **Published Panel 3 values (1963-1991):**
 #
 # | Size | Low | 2 | 3 | 4 | High |
 # |------|----:|----:|----:|----:|----:|
@@ -487,24 +406,14 @@ display(panel_pct.round(2))
 # %% [markdown]
 # ### Panel 4: Average of annual number of firms in portfolio
 #
-# For each June, the number of firms in each of the 25 portfolios is counted; those
-# annual counts are then averaged across all years.
+# For each June, the number of firms in each of the 25 portfolios is counted;
+# those annual counts are then averaged across 1963-1991.
 
 # %%
-# Calc "Average of annual number of firms in portfolio"
-_annual_nfirms = ff5.groupby(["jdate", "sz5", "bm5"]).size().reset_index(name="n")
-panel_nfirms = (
-    _annual_nfirms.groupby(["sz5", "bm5"])["n"]
-    .mean()
-    .unstack()
-    .rename_axis(index="Size", columns="BE/ME")
-)
-panel_nfirms.index = ["Small", "2", "3", "4", "Big"]
-panel_nfirms.columns = ["Low", "2", "3", "4", "High"]
-display(panel_nfirms.round(0))
+panels["n_firms"].round(1)
 
 # %% [markdown]
-# **Panel 4: Average of annual number of firms in portfolio**
+# **Published Panel 4 values (1963-1991):**
 #
 # | Size | Low | 2 | 3 | 4 | High |
 # |------|----:|----:|----:|----:|----:|
@@ -515,4 +424,7 @@ display(panel_nfirms.round(0))
 # | Big | 93.6 | 63.7 | 52.7 | 44.0 | 23.6 |
 
 # %% [markdown]
-#
+# Differences from the published values reflect the modern CRSP/Compustat
+# vintage (data revisions and backfill) and small methodology details. The
+# unit test `test_table1_panels` in `test_calc_Fama_French_1993.py` holds
+# these panels to tolerances calibrated against the published table.

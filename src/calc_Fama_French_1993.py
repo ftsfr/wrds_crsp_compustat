@@ -517,6 +517,101 @@ def compare_with_actual_ff_factors(ff_factors, data_dir=DATA_DIR):
     return ff_compare, ff_compare_post_1970
 
 
+def build_25_size_beme_portfolios(data_dir=DATA_DIR):
+    """Build the firm-June panel sorted into the 25 size x BE/ME portfolios.
+
+    Follows Fama-French (1993) Table 1: each June, stocks are sorted
+    independently into NYSE size quintiles (`sz5`, 1=Small to 5=Big) and NYSE
+    BE/ME quintiles (`bm5`, 1=Low to 5=High). Returns one row per permno per
+    June, with quintile assignments and June market equity in $millions
+    (`me_mm`).
+    """
+    comp = pull_CRSP_Compustat.load_compustat(data_dir=data_dir)
+    crsp = pull_CRSP_Compustat.load_CRSP_stock_ciz(data_dir=data_dir)
+    ccm = pull_CRSP_Compustat.load_CRSP_Comp_Link_Table(data_dir=data_dir)
+
+    comp = calc_book_equity_and_years_in_compustat(comp)
+    crsp = subset_CRSP_to_common_stock_and_exchanges(crsp)
+    crsp2 = calculate_market_equity(crsp)
+    _, crsp_jun = use_dec_market_equity(crsp2)
+    ccm_jun = merge_CRSP_and_Compustat(crsp_jun, comp, ccm)
+
+    # Universe: positive BE/ME, positive June ME, positive Dec ME, at least one
+    # year in Compustat. The dec_me > 0 condition drops firms whose December
+    # market equity is zero, which would otherwise make beme infinite.
+    ff5 = ccm_jun[
+        (ccm_jun["beme"] > 0)
+        & (ccm_jun["me"] > 0)
+        & (ccm_jun["dec_me"] > 0)
+        & (ccm_jun["count"] >= 1)
+    ].copy()
+
+    # NYSE quintile breakpoints per June, computed separately for size and BE/ME
+    nyse = ff5[ff5["primaryexch"] == "N"]
+    for col, bucket in [("me", "sz5"), ("beme", "bm5")]:
+        brk = ff5[["jdate"]].join(
+            nyse.groupby("jdate")[col].quantile([0.2, 0.4, 0.6, 0.8]).unstack(),
+            on="jdate",
+        )
+        ff5[bucket] = (
+            1
+            + (ff5[col] > brk[0.2]).astype(int)
+            + (ff5[col] > brk[0.4]).astype(int)
+            + (ff5[col] > brk[0.6]).astype(int)
+            + (ff5[col] > brk[0.8]).astype(int)
+        )
+
+    # me = price x shares-in-thousands, i.e. $thousands; convert to $millions
+    ff5["me_mm"] = ff5["me"] / 1000.0
+    return ff5
+
+
+def calc_table1_panels(ff5, start_year=None, end_year=None):
+    """Compute Panels 1-4 of Fama-French (1993) Table 1.
+
+    Each panel is a 5x5 DataFrame (size quintiles down, BE/ME quintiles
+    across) of within-portfolio annual statistics averaged across years:
+
+    - "size": average of annual averages of firm size ($millions)
+    - "beme": average of annual BE/ME ratios
+    - "pct_mktval": average of annual percent of market value in portfolio
+    - "n_firms": average of annual number of firms in portfolio
+
+    Restrict to portfolio-formation years [start_year, end_year] to compare
+    with the published table, which covers 1963-1991.
+    """
+    if start_year is not None:
+        ff5 = ff5[ff5["jdate"].dt.year >= start_year]
+    if end_year is not None:
+        ff5 = ff5[ff5["jdate"].dt.year <= end_year]
+
+    def _grid(annual, value):
+        panel = annual.groupby(["sz5", "bm5"])[value].mean().unstack()
+        panel = panel.reindex(index=[1, 2, 3, 4, 5], columns=[1, 2, 3, 4, 5])
+        panel = panel.rename_axis(index="Size", columns="BE/ME")
+        panel.index = ["Small", "2", "3", "4", "Big"]
+        panel.columns = ["Low", "2", "3", "4", "High"]
+        return panel
+
+    annual_size = ff5.groupby(["jdate", "sz5", "bm5"])["me_mm"].mean().reset_index()
+    annual_beme = ff5.groupby(["jdate", "sz5", "bm5"])["beme"].mean().reset_index()
+
+    cell_value = ff5.groupby(["jdate", "sz5", "bm5"])["me_mm"].sum().reset_index()
+    cell_value = cell_value.join(
+        ff5.groupby("jdate")["me_mm"].sum().rename("total_me"), on="jdate"
+    )
+    cell_value["pct"] = 100 * cell_value["me_mm"] / cell_value["total_me"]
+
+    annual_nfirms = ff5.groupby(["jdate", "sz5", "bm5"]).size().reset_index(name="n")
+
+    return {
+        "size": _grid(annual_size, "me_mm"),
+        "beme": _grid(annual_beme, "beme"),
+        "pct_mktval": _grid(cell_value, "pct"),
+        "n_firms": _grid(annual_nfirms, "n"),
+    }
+
+
 def _demo():
     vwret, vwret_n, ff_factors, ff_nfirms = create_Fama_French_factors(
         data_dir=DATA_DIR
