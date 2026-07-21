@@ -11,3 +11,4 @@ __pycache__/
 .doit.db.*
 docs/
 .DS_Store
+.vscode/

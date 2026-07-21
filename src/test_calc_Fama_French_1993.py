@@ -2,7 +2,9 @@ import pandas as pd
 import pull_CRSP_Compustat
 import pull_ken_french_data
 from calc_Fama_French_1993 import (
+    build_25_size_beme_portfolios,
     calc_book_equity_and_years_in_compustat,
+    calc_table1_panels,
     calculate_market_equity,
     compare_with_actual_ff_factors,
     create_Fama_French_factors,
@@ -205,3 +207,69 @@ def test_compare_manual_factors_against_crsp():
 
     assert ff_compare_post_1970[["smb_actual", "smb_manual"]].corr().iloc[0, 1] > 0.99
     assert ff_compare_post_1970[["hml_actual", "hml_manual"]].corr().iloc[0, 1] > 0.98
+
+
+def test_table1_panels():
+    """Compare Panels 1-4 of Fama-French (1993) Table 1 to the published values.
+
+    Panels are computed over the 1963-1991 formation years the published table
+    covers. Modern CRSP/Compustat vintages do not reproduce the 1993 numbers
+    exactly (data revisions and backfill), so the tolerances below were
+    calibrated against the deviations observed with a Feb 2026 data pull, with
+    headroom: observed mean relative deviations were roughly 20% (size),
+    6% (BE/ME), 13% (pct of market value), and 8% (number of firms).
+    """
+    published = {
+        "size": [
+            [20.6, 20.8, 20.2, 19.4, 15.1],
+            [89.7, 89.3, 89.3, 89.9, 88.5],
+            [209.3, 211.9, 210.8, 214.8, 210.7],
+            [535.1, 537.4, 545.4, 551.6, 538.7],
+            [3583.7, 2885.8, 2819.5, 2700.5, 2337.9],
+        ],
+        "beme": [
+            [0.30, 0.62, 0.84, 1.09, 1.80],
+            [0.31, 0.60, 0.83, 1.09, 1.71],
+            [0.31, 0.60, 0.84, 1.08, 1.66],
+            [0.31, 0.61, 0.84, 1.09, 1.67],
+            [0.29, 0.59, 0.83, 1.08, 1.56],
+        ],
+        "pct_mktval": [
+            [0.69, 0.49, 0.46, 0.48, 0.64],
+            [0.92, 0.71, 0.65, 0.61, 0.55],
+            [1.78, 1.36, 1.26, 1.14, 0.82],
+            [3.95, 3.01, 2.71, 2.41, 1.50],
+            [30.13, 15.87, 12.85, 10.44, 4.61],
+        ],
+        "n_firms": [
+            [428.0, 276.6, 263.8, 291.5, 512.7],
+            [121.6, 94.0, 86.7, 79.8, 71.3],
+            [102.7, 78.3, 73.0, 64.5, 45.9],
+            [90.1, 68.9, 60.7, 53.1, 33.4],
+            [93.6, 63.7, 52.7, 44.0, 23.6],
+        ],
+    }
+    # (max cell relative deviation, mean relative deviation)
+    tolerances = {
+        "size": (0.35, 0.25),
+        "beme": (0.30, 0.10),
+        "pct_mktval": (0.35, 0.18),
+        "n_firms": (0.25, 0.12),
+    }
+
+    ff5 = build_25_size_beme_portfolios(data_dir=DATA_DIR)
+    panels = calc_table1_panels(ff5, start_year=1963, end_year=1991)
+
+    for key, (max_tol, mean_tol) in tolerances.items():
+        computed = panels[key]
+        expected = pd.DataFrame(
+            published[key], index=computed.index, columns=computed.columns
+        )
+        rel = ((computed - expected) / expected).abs()
+        assert rel.max().max() < max_tol, f"{key}: max rel dev {rel.max().max():.1%}"
+        assert rel.mean().mean() < mean_tol, f"{key}: mean rel dev {rel.mean().mean():.1%}"
+
+    # Structural checks: market value shares sum to ~100% and average firm size
+    # increases up the size quintiles within every BE/ME column
+    assert abs(panels["pct_mktval"].to_numpy().sum() - 100) < 1.0
+    assert (panels["size"].diff().iloc[1:] > 0).all().all()
