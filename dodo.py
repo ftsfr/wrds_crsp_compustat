@@ -26,22 +26,23 @@ os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
 # fmt: off
 ## Helper functions for automatic execution of Jupyter notebooks
+## Paths are double-quoted to handle spaces on both POSIX shells and Windows cmd
 def jupyter_execute_notebook(notebook_path):
-    return f"jupyter nbconvert --execute --to notebook --ClearMetadataPreprocessor.enabled=True --inplace '{notebook_path}'"
+    return f'jupyter nbconvert --execute --to notebook --ClearMetadataPreprocessor.enabled=True --inplace "{notebook_path}"'
 def jupyter_to_html(notebook_path, output_dir=OUTPUT_DIR):
-    return f"jupyter nbconvert --to html --output-dir='{output_dir}' '{notebook_path}'"
+    return f'jupyter nbconvert --to html --output-dir="{output_dir}" "{notebook_path}"'
 def jupyter_to_md(notebook_path, output_dir=OUTPUT_DIR):
     """Requires jupytext"""
-    return f"jupytext --to markdown --output-dir='{output_dir}' '{notebook_path}'"
+    return f'jupytext --to markdown --output-dir="{output_dir}" "{notebook_path}"'
 def jupyter_to_python(notebook_path, notebook, build_dir):
     """Convert a notebook to a python script"""
-    return f"jupyter nbconvert --to python '{notebook_path}' --output _{notebook}.py --output-dir '{build_dir}'"
+    return f'jupyter nbconvert --to python "{notebook_path}" --output _{notebook}.py --output-dir "{build_dir}"'
 def jupyter_clear_output(notebook_path):
     """Clear the output of a notebook"""
-    return f"jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True --inplace '{notebook_path}'"
+    return f'jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True --inplace "{notebook_path}"'
 def jupytext_to_notebook(pyfile_path, notebook_path):
     """Convert a Python script to a Jupyter notebook using jupytext."""
-    return f"jupytext --to notebook --output '{notebook_path}' '{pyfile_path}'"
+    return f'jupytext --to notebook --output "{notebook_path}" "{pyfile_path}"'
 # fmt: on
 
 
@@ -148,7 +149,15 @@ notebook_tasks = {
     "summary_crsp_compustat_ipynb": {
         "path": "./src/summary_crsp_compustat_ipynb.py",
         "file_dep": [
+            "src/calc_Fama_French_1993.py",
+            "src/pull_CRSP_Compustat.py",
             DATA_DIR / "ftsfr_CRSP_monthly_stock_ret.parquet",
+            DATA_DIR / "Compustat.parquet",
+            DATA_DIR / "CRSP_stock_ciz.parquet",
+            DATA_DIR / "CRSP_Comp_Link_Table.parquet",
+            DATA_DIR / "FF_FACTORS.parquet",
+            DATA_DIR / "FF_1993_factors.parquet",
+            DATA_DIR / "FF_1993_nfirms.parquet",
         ],
         "targets": [],
     },
