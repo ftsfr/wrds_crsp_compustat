@@ -1,99 +1,56 @@
-[config]
-type = "pipeline"
-chartbook_format_version = "0.0.2"
-
-[site]
-title = "WRDS CRSP-Compustat"
-author = "Jeremy Bejarano"
+[project]
+name = "WRDS CRSP-Compustat"
+description = "CRSP stock returns and Fama-French factor replication from WRDS CRSP and Compustat databases"
+contributors = [
+    "Jeremy Bejarano",
+    "Tobias Rodriguez del Pozo",
+]
+repo_url = "https://github.com/ftsfr/wrds_crsp_compustat"
 copyright = "2025"
-logo_path = ""
-favicon_path = ""
-
-[pipeline]
-id = "wrds_crsp_compustat"
-pipeline_name = "WRDS CRSP-Compustat"
-pipeline_description = "CRSP stock returns and Fama-French factor replication from WRDS CRSP and Compustat databases"
-lead_pipeline_developer = "Jeremy Bejarano"
-contributors = ["Jeremy Bejarano", "Tobias Rodriguez del Pozo"]
-runs_on = "Windows/Linux/MacOS"
-git_repo_URL = "https://github.com/ftsfr/wrds_crsp_compustat"
-README_file_path = "./README.md"
-
-[notebooks]
+os_compatibility = [
+    "Windows",
+    "Linux",
+    "MacOS",
+]
 
 [notebooks.summary_crsp_compustat]
-notebook_name = "summary_crsp_compustat"
-notebook_description = "Summary statistics and visualization of CRSP stock returns and Fama-French factors"
-notebook_path = "_output/_notebook_build/summary_crsp_compustat_ipynb.ipynb"
-is_publishable = true
-
-[charts]
-
-[charts.crsp_returns_replication]
-chart_name = "CRSP Monthly Stock Returns"
-short_description_chart = "CRSP monthly stock returns for Fama-French 1993 factor replication"
-dataframe_id = "ftsfr_CRSP_monthly_stock_ret"
-path_to_html_chart = "./_output/crsp_returns_replication.html"
-path_to_excel_chart = ""
-topic_tags = ["stocks", "returns", "CRSP", "fama-french", "replication"]
-past_publications = ["Fama and French (1993) - Common risk factors in the returns on stocks and bonds"]
-chart_docs_str = """
-## CRSP Monthly Stock Returns
-
-Monthly stock returns from CRSP for Fama-French factor construction.
-
-### Data Source
-
-CRSP Monthly Stock File via WRDS
-
-### Reference
-
-Fama and French (1993) factor methodology
-"""
-
-[charts.crsp_cumulative_returns]
-chart_name = "CRSP Monthly Stock Cumulative Returns"
-short_description_chart = "Cumulative returns showing growth of $1 invested in CRSP stocks"
-dataframe_id = "ftsfr_CRSP_monthly_stock_ret"
-path_to_html_chart = "./_output/crsp_cumulative_returns.html"
-path_to_excel_chart = ""
-topic_tags = ["stocks", "cumulative returns", "CRSP", "fama-french"]
-past_publications = ["Fama and French (1993) - Common risk factors in the returns on stocks and bonds"]
-chart_docs_str = """
-## CRSP Monthly Stock Cumulative Returns
-
-Cumulative returns showing growth of $1 invested in CRSP stocks for Fama-French factor construction.
-
-### Calculation
-
-Cumulative return = Product of (1 + monthly return) over time
-
-### Data Source
-
-CRSP Monthly Stock File via WRDS
-"""
-
-[dataframes]
+name = "summary_crsp_compustat"
+description = "Summary statistics and visualization of CRSP stock returns and Fama-French factors"
+path = "_output/_notebook_build/summary_crsp_compustat_ipynb.ipynb"
+publishable = true
 
 [dataframes.ftsfr_CRSP_monthly_stock_ret]
-dataframe_name = "ftsfr_CRSP_monthly_stock_ret"
-short_description_df = "CRSP monthly stock returns (including dividends) in long format"
-data_sources = ["CRSP"]
-data_providers = ["WRDS"]
-need_to_contact_provider = ["no"]
-data_on_pre_approved_list = ["No"]
-links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
-topic_tags = ["stocks", "returns", "CRSP"]
-type_of_data_access = ["WRDS Subscription"]
-data_license = "WRDS"
-license_expiration_date = ""
-provider_contact_info = ""
-restriction_on_use = "No"
-how_is_pulled = "Pulled from WRDS CRSP database"
-path_to_parquet_data = "./_data/ftsfr_CRSP_monthly_stock_ret.parquet"
-path_to_excel_data = ""
+name = "ftsfr_CRSP_monthly_stock_ret"
+description = "CRSP monthly stock returns (including dividends) in long format"
+sources = [
+    "CRSP",
+]
+providers = [
+    "WRDS",
+]
+contact_required = [
+    "no",
+]
+pre_approved = [
+    "No",
+]
+provider_links = [
+    "https://wrds-www.wharton.upenn.edu/",
+]
+tags = [
+    "stocks",
+    "returns",
+    "CRSP",
+]
+access_types = [
+    "WRDS Subscription",
+]
+license = "WRDS"
+restrictions = "No"
+pull_method = "Pulled from WRDS CRSP database"
+path = "./_data/ftsfr_CRSP_monthly_stock_ret.parquet"
 date_col = "ds"
-dataframe_docs_str = """
+docs = """
 ## CRSP Monthly Stock Returns
 
 Monthly stock returns from CRSP (including dividends).
@@ -118,24 +75,37 @@ CRSP Monthly Stock File via WRDS (CIZ format)
 """
 
 [dataframes.ftsfr_CRSP_monthly_stock_retx]
-dataframe_name = "ftsfr_CRSP_monthly_stock_retx"
-short_description_df = "CRSP monthly stock returns (excluding dividends) in long format"
-data_sources = ["CRSP"]
-data_providers = ["WRDS"]
-need_to_contact_provider = ["no"]
-data_on_pre_approved_list = ["No"]
-links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
-topic_tags = ["stocks", "returns", "CRSP"]
-type_of_data_access = ["WRDS Subscription"]
-data_license = "WRDS"
-license_expiration_date = ""
-provider_contact_info = ""
-restriction_on_use = "No"
-how_is_pulled = "Pulled from WRDS CRSP database"
-path_to_parquet_data = "./_data/ftsfr_CRSP_monthly_stock_retx.parquet"
-path_to_excel_data = ""
+name = "ftsfr_CRSP_monthly_stock_retx"
+description = "CRSP monthly stock returns (excluding dividends) in long format"
+sources = [
+    "CRSP",
+]
+providers = [
+    "WRDS",
+]
+contact_required = [
+    "no",
+]
+pre_approved = [
+    "No",
+]
+provider_links = [
+    "https://wrds-www.wharton.upenn.edu/",
+]
+tags = [
+    "stocks",
+    "returns",
+    "CRSP",
+]
+access_types = [
+    "WRDS Subscription",
+]
+license = "WRDS"
+restrictions = "No"
+pull_method = "Pulled from WRDS CRSP database"
+path = "./_data/ftsfr_CRSP_monthly_stock_retx.parquet"
 date_col = "ds"
-dataframe_docs_str = """
+docs = """
 ## CRSP Monthly Stock Returns (Ex-Dividend)
 
 Monthly stock returns from CRSP excluding dividends.
@@ -151,4 +121,61 @@ Monthly stock returns from CRSP excluding dividends.
 ### Data Source
 
 CRSP Monthly Stock File via WRDS (CIZ format)
+"""
+
+[charts.crsp_returns_replication]
+name = "CRSP Monthly Stock Returns"
+description = "CRSP monthly stock returns for Fama-French 1993 factor replication"
+dataframe = "ftsfr_CRSP_monthly_stock_ret"
+path = "./_output/crsp_returns_replication.html"
+tags = [
+    "stocks",
+    "returns",
+    "CRSP",
+    "fama-french",
+    "replication",
+]
+publications = [
+    "Fama and French (1993) - Common risk factors in the returns on stocks and bonds",
+]
+docs = """
+## CRSP Monthly Stock Returns
+
+Monthly stock returns from CRSP for Fama-French factor construction.
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS
+
+### Reference
+
+Fama and French (1993) factor methodology
+"""
+
+[charts.crsp_cumulative_returns]
+name = "CRSP Monthly Stock Cumulative Returns"
+description = "Cumulative returns showing growth of $1 invested in CRSP stocks"
+dataframe = "ftsfr_CRSP_monthly_stock_ret"
+path = "./_output/crsp_cumulative_returns.html"
+tags = [
+    "stocks",
+    "cumulative returns",
+    "CRSP",
+    "fama-french",
+]
+publications = [
+    "Fama and French (1993) - Common risk factors in the returns on stocks and bonds",
+]
+docs = """
+## CRSP Monthly Stock Cumulative Returns
+
+Cumulative returns showing growth of $1 invested in CRSP stocks for Fama-French factor construction.
+
+### Calculation
+
+Cumulative return = Product of (1 + monthly return) over time
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS
 """
