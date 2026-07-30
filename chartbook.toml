@@ -123,6 +123,65 @@ Monthly stock returns from CRSP excluding dividends.
 CRSP Monthly Stock File via WRDS (CIZ format)
 """
 
+[dataframes.crsp_monthly_stock]
+name = "crsp_monthly_stock"
+description = "CRSP monthly stock file (CIZ format): returns, prices, and shares outstanding for the full msf_v2 universe"
+sources = [
+    "CRSP",
+]
+providers = [
+    "WRDS",
+]
+contact_required = [
+    "no",
+]
+pre_approved = [
+    "No",
+]
+provider_links = [
+    "https://wrds-www.wharton.upenn.edu/",
+]
+tags = [
+    "stocks",
+    "returns",
+    "prices",
+    "CRSP",
+]
+access_types = [
+    "WRDS Subscription",
+]
+license = "WRDS"
+restrictions = "No"
+pull_method = "Pulled from WRDS CRSP database"
+path = "./_data/CRSP_stock_ciz.parquet"
+date_col = "mthcaldt"
+docs = """
+## CRSP Monthly Stock File (CIZ format)
+
+The full CRSP monthly stock file (`crsp.msf_v2`), unfiltered. Downstream
+consumers should filter the universe themselves (e.g.,
+`securitytype == 'EQTY'` for a broad equity universe, or add
+`securitysubtype == 'COM'` and `usincflg == 'Y'` for U.S. common stocks).
+
+### Key columns
+
+| Column | Description |
+|--------|-------------|
+| permno | CRSP permanent security identifier |
+| mthcaldt | Month-end calendar date |
+| mthret | Monthly return (including dividends, delisting-adjusted) |
+| mthretx | Monthly return (excluding dividends) |
+| shrout | Shares outstanding (thousands) |
+| mthprc | Month-end price |
+| securitytype, securitysubtype, sharetype, usincflg, issuertype | Universe filter fields |
+
+Market capitalization can be computed as `shrout * abs(mthprc)`.
+
+### Data Source
+
+CRSP Monthly Stock File via WRDS (CIZ format, Flat File Format 2.0)
+"""
+
 [charts.crsp_returns_replication]
 name = "CRSP Monthly Stock Returns"
 description = "CRSP monthly stock returns for Fama-French 1993 factor replication"
