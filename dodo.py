@@ -222,7 +222,7 @@ def task_generate_charts():
 def task_generate_pipeline_site():
     """Generate the chartbook documentation site."""
     return {
-        "actions": ["chartbook docs generate -f"],
+        "actions": ["chartbook docs build -f"],
         "file_dep": [
             "chartbook.toml",
             *notebook_files,
